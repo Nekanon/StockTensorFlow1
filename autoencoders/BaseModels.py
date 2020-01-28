@@ -8,8 +8,10 @@ import matplotlib.pyplot as plt
 import tensorflow.keras.backend as K
 from tensorflow.keras.regularizers import L1L2
 import random
+import statistics as sts
+import math
 
-window = 10
+# window = 10
 
 
 # def getData(window=10, des3=False):
@@ -67,6 +69,31 @@ def createAE(encoding_dim=5, window=10):
     # flat_decoded = Dense(28 * 28, activation='sigmoid')(input_encoded)
     # decoded = Reshape((28, 28, 1))(flat_decoded)
     decoded = Dense(window)(input_encoded)  # , activation='sigmoid'
+
+    # Модели, в конструктор первым аргументом передаются входные слои, а вторым выходные слои
+    # Другие модели можно так же использовать как и слои
+    encoder = Model(input_img, encoded, name="encoder")
+    decoder = Model(input_encoded, decoded, name="decoder")
+    autoencoder = Model(input_img, decoder(encoder(input_img)), name="autoencoder")
+    return encoder, decoder, autoencoder
+
+def createAE2D(encoding_dim=5, window=10, streams = 1):
+    # Размерность кодированного представления
+
+    # Энкодер
+    # Входной плейсхолдер
+    input_img = Input(shape=(streams, window, 1))  # 28, 28, 1 - размерности строк, столбцов, фильтров одной картинки, без батч-размерности
+    # Вспомогательный слой решейпинга
+    flat_img = Flatten()(input_img)
+    # Кодированное полносвязным слоем представление
+    encoded = Dense(encoding_dim)(flat_img)
+
+    # Декодер
+    # Раскодированное другим полносвязным слоем изображение
+    input_encoded = Input(shape=(encoding_dim,))
+    # decoded = Dense(window)(input_encoded)
+    flat_decoded = Dense(streams*window)(input_encoded)
+    decoded = Reshape((streams, window, 1))(flat_decoded)
 
     # Модели, в конструктор первым аргументом передаются входные слои, а вторым выходные слои
     # Другие модели можно так же использовать как и слои
@@ -146,7 +173,7 @@ def createSparseAE(encoding_dim=16, window=10):
     return encoder, decoder, autoencoder
 
 
-def plotResult(*args):
+def plotResult(*args, window=10):
     args = [x.squeeze() for x in args]
     n = min([x.shape[0] for x in args])
 
@@ -161,6 +188,41 @@ def plotResult(*args):
                 x1, [-0.4 for i in range(window)], "go", linestyle='solid')
         ax.set_title('random state: ' + str(row))
         plt.show()
+
+
+def plotResult2D(*args, window=10):
+    args = [x.squeeze() for x in args]
+    n = len(args[0])
+
+    for j in range(1):
+        image1 = args[0][j]
+        plt.imshow(image1)
+        plt.show()
+        image2 = args[1][j]
+        plt.imshow(image2)
+        plt.show()
+        image3 = image1 - image2
+        plt.imshow(image3)
+        plt.show()
+
+        total_tt = []
+        for i0 in range(n):
+            for i1 in range(len(image3)):
+                tt = 0
+                for i2 in range(window):
+                    tt += image3[i1][i2] ** 2
+                tt /= window
+                tt = math.sqrt(tt)
+                total_tt.append(tt)
+        print("error test= " + str(sts.mean(total_tt)))
+
+        print("----------original-----------------")
+        print(image1)
+        print("----------decode-----------------")
+        print(image2)
+        print("----------diff-----------------")
+        print(image3)
+
 
 
 def createDenoisingModel(autoencoder, batch_size):
@@ -178,33 +240,35 @@ def createDenoisingModel(autoencoder, batch_size):
     return noiser, denoiser_model
 
 
-def experimental1(input_data):
+def experimental1(input_data, encod_count = 2, window=10):
     x_train, x_test = input_data
-    encoder, decoder, autoencoder = createAE(8)
+    encoder, decoder, autoencoder = createAE(encod_count, window)
     # encoder, decoder, autoencoder = createDeepAE(7)
     # encoder, decoder, autoencoder = createSparseAE(6)
     autoencoder.compile(optimizer='adam', loss='mean_squared_error')  # binary_crossentropy
 
     autoencoder.fit(x_train, x_train,
-                    epochs=2000,
+                    epochs=3000,
                     batch_size=500,
-                    shuffle=True)
+                    shuffle=True,
+                    validation_data=(x_test, x_test))
 
     imgs = x_test
     encoded_imgs = encoder.predict(imgs)
     decoded_imgs = decoder.predict(encoded_imgs)
-    plotResult(imgs, decoded_imgs)
+    plotResult(imgs, decoded_imgs, window=window)
 
     # codes = encoder.predict(x_test)
     # sns_plot = sns.pairplot(pd.DataFrame(codes))
     # sns_plot.savefig('pairplot.png')
-    plt.show()
+    # print(encoder.get_weights())
+    # plt.show()
     return encoder, decoder, autoencoder
 
 
 def experimental2(input_data):
     x_train, x_test = input_data
-    encoder, decoder, autoencoder = createDeepAE(7)
+    encoder, decoder, autoencoder = createDeepAE(7, 5)
 
     batch_size = 100
     noiser, denoiser_model = createDenoisingModel(autoencoder, batch_size)
@@ -213,3 +277,22 @@ def experimental2(input_data):
                        epochs=2000,
                        batch_size=batch_size,
                        shuffle=True)
+
+def experimental3(input_data, encod_count = 2, window=10):
+    x_train, x_test = input_data
+    shape1 = input_data[0].shape
+    encoder, decoder, autoencoder = createAE2D(encod_count, window, shape1[1])
+    autoencoder.compile(optimizer='adam', loss='mean_squared_error')
+
+    autoencoder.fit(x_train, x_train,
+                    epochs=1000,
+                    batch_size=500,
+                    shuffle=True,
+                    validation_data=(x_test, x_test))
+
+    imgs = x_test
+    encoded_imgs = encoder.predict(imgs)
+    decoded_imgs = decoder.predict(encoded_imgs)
+    plotResult2D(imgs, decoded_imgs, window=window)
+
+    return encoder, decoder, autoencoder
