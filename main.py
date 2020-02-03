@@ -28,17 +28,19 @@ def experimentAE():
 def experimentQL():
     window = 10
     dif_streams1 = [
-                ("C", "Close", "Open", 0),
-                ("C", "High", "Open", 0),
-                ("C", "Low", "Open", 0),
-                ("C", "Close", "Close", 1),
-                ("C", "Low", "Low", 1),
-                ("C", "High", "High", 1)
+                ("BTC", "Close", "Open", 0),
+                ("BTC", "High", "Open", 0),
+                ("BTC", "Low", "Open", 0),
+                ("BTC", "Close", "Close", 1),
+                ("BTC", "Low", "Low", 1),
+                ("BTC", "High", "High", 1)
                 ]
     dif_data = bd.getDifData(window=window, streams=dif_streams1)
-    dif_streams1 = ("C", "Close")
+    dif_test = bd.getDifData(window=window, streams=dif_streams1, test=True)
+    dif_streams1 = ("BTC", "Close")
     pure_data = bd.getPureData(window=window+2, stream=dif_streams1)
-    env = data.QEnvirontent.QEnvironment(pure_data, dif_data)
+    pure_test = bd.getPureData(window=window+2, stream=dif_streams1, test=True)
+    env = data.QEnvirontent.QEnvironment(data_y=pure_data, data_x=dif_data, test_y=pure_test, test_x=dif_test)
     qs = reinforcements.for_stock.QStock(env, dif_data)
     qs.run()
 
