@@ -40,8 +40,8 @@ def getData(tiker="GOOGL", window=10, des3=False, tiker_test=None):
     return train_data, test_data
 
 
-def getDataN1(window=10, streams=None, test=False):
-    # (data[column1][k]/data[column2][k-shift]) -> (tiker, column1, column2, shift)
+def getDifData(window=10, streams=None, test=False):
+    """(data[column1][k]/data[column2][k-shift]) -> (tiker, column1, column2, shift)"""
     if streams is None:
         streams = []
     train_data = []
@@ -82,3 +82,25 @@ def getDataN1(window=10, streams=None, test=False):
     # train_data = np.swapaxes(train_data, 0, 1)
     train_data1 = np.swapaxes(train_data, 0, 1)
     return train_data1
+
+def getPureData(window=10, stream=None, test=False):
+    """(data[column1][k]) -> (tiker, column1)"""
+    train_data = []
+
+    length = 0
+    tiker, column1 = stream
+
+    # train
+    suff = '0.csv'
+    if test:
+        suff = '1.csv'
+    df = pd.read_csv('./data/datasets/' + str(tiker) + str(suff))
+    df = df[column1]
+    df = df.tolist()
+
+    start = window
+    end = len(df)
+    train_data = [df[i] for i in range(start, end)]
+    train_data = np.array(train_data)
+    train_data = train_data.astype('float32')
+    return train_data

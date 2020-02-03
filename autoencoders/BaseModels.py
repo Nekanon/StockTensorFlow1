@@ -194,34 +194,35 @@ def plotResult2D(*args, window=10):
     args = [x.squeeze() for x in args]
     n = len(args[0])
 
-    for j in range(1):
-        image1 = args[0][j]
-        plt.imshow(image1)
-        plt.show()
-        image2 = args[1][j]
-        plt.imshow(image2)
-        plt.show()
-        image3 = image1 - image2
-        plt.imshow(image3)
-        plt.show()
+    j = random.randrange(0, n)
+    # for j in range(1):
+    image1 = args[0][j]
+    plt.imshow(image1)
+    plt.show()
+    image2 = args[1][j]
+    plt.imshow(image2)
+    plt.show()
+    image3 = image1 - image2
+    plt.imshow(image3)
+    plt.show()
 
-        total_tt = []
-        for i0 in range(n):
-            for i1 in range(len(image3)):
-                tt = 0
-                for i2 in range(window):
-                    tt += image3[i1][i2] ** 2
-                tt /= window
-                tt = math.sqrt(tt)
-                total_tt.append(tt)
-        print("error test= " + str(sts.mean(total_tt)))
+    total_tt = []
+    for i0 in range(n):
+        for i1 in range(len(image3)):
+            tt = 0
+            for i2 in range(window):
+                tt += image3[i1][i2] ** 2
+            tt /= window
+            tt = math.sqrt(tt)
+            total_tt.append(tt)
+    print("error test= " + str(sts.mean(total_tt)))
 
-        print("----------original-----------------")
-        print(image1)
-        print("----------decode-----------------")
-        print(image2)
-        print("----------diff-----------------")
-        print(image3)
+    print("----------original-----------------")
+    print(image1)
+    print("----------decode-----------------")
+    print(image2)
+    print("----------diff-----------------")
+    print(image3)
 
 
 
