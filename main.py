@@ -28,15 +28,15 @@ def experimentAE():
 def experimentQL():
     window = 10
     dif_streams1 = [
-                ("GOOGL", "Close", "Open", 0),
-                ("GOOGL", "High", "Open", 0),
-                ("GOOGL", "Low", "Open", 0),
-                ("GOOGL", "Close", "Close", 1),
-                ("GOOGL", "Low", "Low", 1),
-                ("GOOGL", "High", "High", 1)
+                ("C", "Close", "Open", 0),
+                ("C", "High", "Open", 0),
+                ("C", "Low", "Open", 0),
+                ("C", "Close", "Close", 1),
+                ("C", "Low", "Low", 1),
+                ("C", "High", "High", 1)
                 ]
     dif_data = bd.getDifData(window=window, streams=dif_streams1)
-    dif_streams1 = ("GOOGL", "Close")
+    dif_streams1 = ("C", "Close")
     pure_data = bd.getPureData(window=window+2, stream=dif_streams1)
     env = data.QEnvirontent.QEnvironment(pure_data, dif_data)
     qs = reinforcements.for_stock.QStock(env, dif_data)

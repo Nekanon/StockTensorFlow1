@@ -140,20 +140,22 @@ class QStock:
 
         for e in range(EPISODES):
 
+            profit = 1
             state = env.getState()
             for time in range(1000):
 
                 action = agent.act(state)
 
                 next_state, reward, done = env.step(action)
+                profit *= 1 + reward
                 # reward = r1 + r2
 
-                agent.memorize(state, action, reward, next_state, done)
+                agent.memorize(state, action, reward*100, next_state, done)
                 state = next_state
                 if done:
                     agent.update_target_model()
                     print("episode: {}/{}, score: {:.2}, e: {:.2}"
-                          .format(e, EPISODES, reward, agent.epsilon))
+                          .format(e, EPISODES, profit, agent.epsilon))
                     break
                 if len(agent.memory) > batch_size and time == 0:
                     agent.replay(batch_size)

@@ -26,6 +26,9 @@ class QEnvironment:
         if self.count >= len(self.data_y) - 1:
             self.done = True
 
+        all_cost_start = self.all_free_money + self.count_stock * self.data_y[self.count]
+        cost_start = round(float((all_cost_start / self.init_cost - 1)), 4)
+
         if action == 0 and self.all_free_money > self.data_y[self.count] * self.fee:
             buy_count = 2 #int(self.all_free_money // self.data_y[self.count] * self.fee * 0.2)
             self.all_free_money -= buy_count * self.data_y[self.count] * self.fee
@@ -37,10 +40,11 @@ class QEnvironment:
         else:
             pass
 
-        all_cost = self.all_free_money + self.count_stock * self.data_y[self.count]
         self.count += 1
+        all_cost_end = self.all_free_money + self.count_stock * self.data_y[self.count]
         state = self.getState()
-        reward = round(float((all_cost / self.init_cost - 1)), 4)
+        cost_end = round(float((all_cost_end / self.init_cost - 1)), 4)
+        reward = round(all_cost_end/all_cost_start - 1, 4)
 
         if done:
             self.count_stock = 0
