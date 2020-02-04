@@ -87,3 +87,6 @@ class QEnvironment:
         test_all_free_money += self.test_y[size - 1] * test_count_stock * (1 / self.fee)
         test_result = round(float(test_all_free_money / test_init_cost - 1), 4)
         return test_result
+
+    def size(self):
+        return len(self.data_y)

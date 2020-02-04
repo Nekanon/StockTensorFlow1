@@ -23,23 +23,30 @@ def experimentAE():
                 ]
     new_data = bd.getDifData(window=window, streams=streams1)
     new_test = bd.getDifData(window=window, streams=streams2, test=True)
-    abm.experimental3(input_data=(new_data, new_test), encod_count=int(window * 1), window=window)
+    abm.getAutoencoder(input_data=(new_data, new_test), encod_count=int(window * 1), window=window)
 
 def experimentQL():
+
+    #prepare data
     window = 10
     dif_streams1 = [
-                ("BTC", "Close", "Open", 0),
-                ("BTC", "High", "Open", 0),
-                ("BTC", "Low", "Open", 0),
-                ("BTC", "Close", "Close", 1),
-                ("BTC", "Low", "Low", 1),
-                ("BTC", "High", "High", 1)
+                ("GOOGL", "Close", "Open", 0),
+                ("GOOGL", "High", "Open", 0),
+                ("GOOGL", "Low", "Open", 0),
+                ("GOOGL", "Close", "Close", 1),
+                ("GOOGL", "Low", "Low", 1),
+                ("GOOGL", "High", "High", 1)
                 ]
     dif_data = bd.getDifData(window=window, streams=dif_streams1)
     dif_test = bd.getDifData(window=window, streams=dif_streams1, test=True)
-    dif_streams1 = ("BTC", "Close")
+    dif_streams1 = ("GOOGL", "Close")
     pure_data = bd.getPureData(window=window+2, stream=dif_streams1)
     pure_test = bd.getPureData(window=window+2, stream=dif_streams1, test=True)
+
+    #get encoder
+    encoder, decoder, autoencoder = abm.getAutoencoder(input_data=(dif_data, dif_test), encod_count=int(window * 2), window=window)
+
+    #QLearning
     env = data.QEnvirontent.QEnvironment(data_y=pure_data, data_x=dif_data, test_y=pure_test, test_x=dif_test)
     qs = reinforcements.for_stock.QStock(env, dif_data)
     qs.run()

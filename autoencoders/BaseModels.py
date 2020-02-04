@@ -279,7 +279,7 @@ def experimental2(input_data):
                        batch_size=batch_size,
                        shuffle=True)
 
-def experimental3(input_data, encod_count = 2, window=10):
+def getAutoencoder(input_data, encod_count = 2, window=10):
     x_train, x_test = input_data
     shape1 = input_data[0].shape
     encoder, decoder, autoencoder = createAE2D(encod_count, window, shape1[1])

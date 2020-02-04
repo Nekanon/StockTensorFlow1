@@ -140,7 +140,8 @@ class QStock:
 
             profit = 1
             state = env.getState()
-            for time in range(1000):
+            size_pole = env.size()
+            for time in range(size_pole):
 
                 action = agent.act(state)
                 next_state, reward, done = env.step(action)
