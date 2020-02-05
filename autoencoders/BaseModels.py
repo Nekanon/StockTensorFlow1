@@ -286,14 +286,14 @@ def getAutoencoder(input_data, encod_count = 2, window=10):
     autoencoder.compile(optimizer='adam', loss='mean_squared_error')
 
     autoencoder.fit(x_train, x_train,
-                    epochs=1000,
+                    epochs=1500,
                     batch_size=500,
                     shuffle=True,
                     validation_data=(x_test, x_test))
 
-    imgs = x_test
-    encoded_imgs = encoder.predict(imgs)
-    decoded_imgs = decoder.predict(encoded_imgs)
-    plotResult2D(imgs, decoded_imgs, window=window)
+    # imgs = x_test
+    # encoded_imgs = encoder.predict(imgs)
+    # decoded_imgs = decoder.predict(encoded_imgs)
+    # plotResult2D(imgs, decoded_imgs, window=window)
 
     return encoder, decoder, autoencoder

@@ -48,7 +48,7 @@ def experimentQL():
 
     #QLearning
     env = data.QEnvirontent.QEnvironment(data_y=pure_data, data_x=dif_data, test_y=pure_test, test_x=dif_test)
-    qs = reinforcements.for_stock.QStock(env, dif_data)
+    qs = reinforcements.for_stock.QStock(env, dif_data, front_model=encoder)
     qs.run()
 
 

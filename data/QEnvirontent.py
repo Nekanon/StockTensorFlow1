@@ -25,7 +25,7 @@ class QEnvironment:
 
     def step(self, action):  # -1, 0 ,1
         done = False
-        if self.count > 700:
+        if self.count >= self.size() - 2:
             done = True
         if self.count >= len(self.data_y) - 1:
             self.done = True

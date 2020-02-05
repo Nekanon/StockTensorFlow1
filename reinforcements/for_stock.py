@@ -14,21 +14,21 @@ EPISODES = 5000
 
 
 class DQNAgent:
-    def __init__(self, state_size, action_size, input_model=None):
+    def __init__(self, state_size, action_size, input_model=None, front_model=None):
         self.state_size = state_size
         self.action_size = action_size
         self.memory = deque(maxlen=2000)
         self.gamma = 0.95  # discount rate
         self.epsilon = 1.0  # exploration rate
-        self.epsilon_min = 0.1
-        self.epsilon_decay = 0.95
+        self.epsilon_min = 0.01
+        self.epsilon_decay = 0.9
         self.learning_rate = 0.001
         if input_model is not None:
             self.model = input_model
             self.target_model = input_model
         else:
-            self.model = self._build_model()
-            self.target_model = self._build_model()
+            self.model = self._build_model(front_model)
+            self.target_model = self._build_model(front_model)
         self.update_target_model()
 
     """Huber loss for Q Learning
@@ -45,14 +45,28 @@ class DQNAgent:
 
         return K.mean(tf.where(cond, squared_loss, quadratic_loss))
 
-    def _build_model(self):
-        input_img = Input(shape=(self.state_size[0], self.state_size[1], 1))
-        flat_img = Flatten()(input_img)
-        x = Dense(20)(flat_img)
-        x = Dense(10)(x)
+    def _build_model(self, front_model=None):
 
-        qlearner = Dense(self.action_size, activation='linear')(x)
-        qlearner = Model(input_img, qlearner, name="qlearner")
+        input_front = None
+        if front_model is None:
+            input_front = Input(shape=(self.state_size[0], self.state_size[1], 1))
+            flat_front = Flatten()(input_front)
+            x1 = Dense(20)(flat_front)
+            front_model = Model(input_front, x1, name="front")
+        else:
+            input_front = front_model.input
+
+
+
+        # x = Dense(10)(x)
+        input_back = Input(shape=(20,))
+        x2 = Dense(10)(input_back)
+        back_model = Model(input_back, x2, name="back")
+
+        # qlearner = Dense(self.action_size, activation='linear')(x)
+        # qlearner = Model(input_img, qlearner, name="qlearner")
+        qlearner = Model(input_front, back_model(front_model(input_front)), name="full_qlearner")
+
         qlearner.compile(loss=self._huber_loss,
                          optimizer=Adam(lr=self.learning_rate))
         return qlearner
@@ -124,17 +138,20 @@ class DQNAgent:
 
 
 class QStock:
-    def __init__(self, environment, data):
+    def __init__(self, environment, data, front_model=None):
         self.environment = environment
         self.data = data
+        state_size = (self.data.shape[1], self.data.shape[2])
+        action_size = 3
+        self.agent = DQNAgent(state_size, action_size, front_model=front_model)
 
     def run(self):
         env = self.environment
-        shape = self.data.shape
+        # shape = self.data.shape
+        # state_size = (shape[1], shape[2])
+        # action_size = 3
 
-        state_size = (shape[1], shape[2])
-        action_size = 3
-        agent = DQNAgent(state_size, action_size)
+        agent = self.agent #DQNAgent(state_size, action_size)
         batch_size = 1000
         for e in range(EPISODES):
 
