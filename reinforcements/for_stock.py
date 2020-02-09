@@ -56,11 +56,10 @@ class DQNAgent:
         else:
             input_front = front_model.input
 
-
-
         # x = Dense(10)(x)
         input_back = Input(shape=(20,))
         x2 = Dense(10)(input_back)
+        x2 = Dense(3)(x2)
         back_model = Model(input_back, x2, name="back")
 
         # qlearner = Dense(self.action_size, activation='linear')(x)
@@ -137,6 +136,94 @@ class DQNAgent:
         self.model.save_weights(name)
 
 
+class GeneticAgent:
+    def __init__(self, environment, amplitude_wights=1.0, front_model=None):
+        self.environment = environment
+        self.model = self._build_model(front_model)
+        self.assessment = 0.0
+        self.environment_current = environment
+        self.mutation_rate_max = 0.5
+        self.mutation_rate_min = 0.05
+
+    def getModel(self):
+        return self.model
+
+    def _build_model(self, front_model=None):
+
+        input_front = None
+        if front_model is None:
+            input_front = Input(shape=(self.state_size[0], self.state_size[1], 1))
+            flat_front = Flatten()(input_front)
+            x1 = Dense(20)(flat_front)
+            front_model = Model(input_front, x1, name="front")
+        else:
+            input_front = front_model.input
+
+        input_back = Input(shape=(20,))
+        x2 = Dense(10)(input_back)
+        x2 = Dense(3)(x2)
+        back_model = Model(input_back, x2, name="back")
+
+        qlearner = Model(input_front, back_model(front_model(input_front)), name="full_qlearner")
+        weights = qlearner.get_weights()
+
+        qlearner.compile(loss="mean_squared_error", optimizer="adam")
+        return qlearner
+
+    def myrandomRange(self, rate):
+        int1 = int(rate * 1000)
+        return float(random.randrange(-int1, int1) / 1000.0)
+
+    def doMutant(self):
+        result = None
+        rangome = random.random()
+        mutation_rate_current = self.mutation_rate_min
+        layers = self.model.get_weights()
+        llayers = []
+        for index_layer, layer in enumerate(layers):
+            llayer = layer.tolist()
+            for index_neur, neur in enumerate(llayer):
+                lneur = neur
+                if index_layer % 2:
+                    llayer[index_neur] += self.myrandomRange(mutation_rate_current)
+                else:
+                    for index_link, link in enumerate(neur):
+                        llayer[index_neur][index_link] += self.myrandomRange(mutation_rate_current)
+
+            llayers.append(np.array(llayer))
+        layers = np.array(llayers)
+        result = self
+        result.model.set_weights(layers)
+
+        return result
+
+    def breading(self):
+        pass
+
+    def doAssessment(self):
+        # self.environment_current = self.environment.steps(self)
+        return self.environment.stepsnew(self)
+
+    def act(self, state):
+        # if np.random.rand() <= self.epsilon:
+        #     return random.randrange(self.action_size)
+        state = np.array([state.tolist()])
+        act_values = self.model.predict(state)
+        return np.argmax(act_values[0])
+
+    def acts(self, states):
+        size = len(states.tolist())
+        acts_values = self.model.predict(x=states)
+        actions = [np.argmax(i) for i in acts_values]
+        return actions
+
+    def load(self, name):
+        self.model.load_weights(name)
+
+    def save(self, name):
+        self.model.save_weights(name)
+
+
 class QStock:
     def __init__(self, environment, data, front_model=None):
         self.environment = environment
@@ -151,7 +238,7 @@ class QStock:
         # state_size = (shape[1], shape[2])
         # action_size = 3
 
-        agent = self.agent #DQNAgent(state_size, action_size)
+        agent = self.agent  # DQNAgent(state_size, action_size)
         batch_size = 1000
         for e in range(EPISODES):
 
@@ -163,7 +250,7 @@ class QStock:
                 action = agent.act(state)
                 next_state, reward, done = env.step(action)
                 profit *= 1 + reward
-                agent.memorize(state, action, reward*100, next_state, done)
+                agent.memorize(state, action, reward * 100, next_state, done)
                 state = next_state
                 if done:
                     test_result = env.test(agent.model)
@@ -173,3 +260,51 @@ class QStock:
                     break
                 if len(agent.memory) > batch_size and time == 0:
                     agent.replay(batch_size)
+
+
+class QGeneticStock:
+    def __init__(self, environment, data, front_model=None):
+        self.environment = environment
+        self.data = data
+        state_size = (self.data.shape[1], self.data.shape[2])
+        action_size = 3
+        self.population = 30
+        self.agents = []
+        for row in range(self.population):
+            agent = GeneticAgent(environment=environment, amplitude_wights=1.0, front_model=front_model)
+            self.agents.append({"agent": agent, "assessment": 0.0})
+
+    def run(self):
+
+        # assessment
+        for row in self.agents:
+            row["assessment"] = row["agent"].doAssessment()
+            r1 = row["agent"].doAssessment()
+            r2 = row["agent"].doAssessment()
+            re = 4
+
+        for e in range(EPISODES):
+
+            # mutation
+            mutants = []
+            for row in self.agents:
+                mutante = row["agent"].doMutant()
+                post_mutant = row["agent"].doAssessment()
+                mutants.append({"agent": mutante, "assessment": mutante.doAssessment()})
+
+            # #breeding
+            # for row in self.agents:
+            #     row["agent"].breeding()
+
+            # its life
+            self.agents = self.agents + mutants
+            # self.agents.sort(key=lambda kv: (kv[1], kv[0]))
+            self.agents = sorted(self.agents, key=lambda i: -i["assessment"])
+            self.agents = self.agents[:self.population]
+
+            print("-----------------------------------")
+            best_agent = self.agents[0]
+            test_result = self.environment.testnew(best_agent["agent"])
+            print("episode: %s", e)
+            print("score: %s", best_agent["assessment"])
+            print("test: %s", test_result)

@@ -40,17 +40,18 @@ def experimentQL():
     dif_data = bd.getDifData(window=window, streams=dif_streams1)
     dif_test = bd.getDifData(window=window, streams=dif_streams1, test=True)
     dif_streams1 = ("GOOGL", "Close")
-    pure_data = bd.getPureData(window=window+2, stream=dif_streams1)
-    pure_test = bd.getPureData(window=window+2, stream=dif_streams1, test=True)
+    pure_data = bd.getPureData(window=window+1, stream=dif_streams1)
+    pure_test = bd.getPureData(window=window+1, stream=dif_streams1, test=True)
 
     #get encoder
     encoder, decoder, autoencoder = abm.getAutoencoder(input_data=(dif_data, dif_test), encod_count=int(window * 2), window=window)
 
     #QLearning
     env = data.QEnvirontent.QEnvironment(data_y=pure_data, data_x=dif_data, test_y=pure_test, test_x=dif_test)
-    qs = reinforcements.for_stock.QStock(env, dif_data, front_model=encoder)
+    # qs = reinforcements.for_stock.QStock(env, dif_data, front_model=encoder)
+    # qs.run()
+    qs = reinforcements.for_stock.QGeneticStock(env, dif_data, front_model=encoder)
     qs.run()
-
 
 def main():
     # experimentAE()
