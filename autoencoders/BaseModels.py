@@ -286,7 +286,7 @@ def getAutoencoder(input_data, encod_count = 2, window=10):
     autoencoder.compile(optimizer='adam', loss='mean_squared_error')
 
     autoencoder.fit(x_train, x_train,
-                    epochs=500,
+                    epochs=1500,
                     batch_size=500,
                     shuffle=True,
                     validation_data=(x_test, x_test))
