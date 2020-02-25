@@ -1,7 +1,7 @@
 import data.BaseData as bd
 import autoencoders.BaseModels as abm
 import data.QEnvirontent
-import reinforcements.for_stock
+import reinforcements.dqnstock
 
 def experimentAE():
     window = 10
@@ -35,7 +35,8 @@ def experimentQL():
                 ("GOOGL", "Low", "Open", 0),
                 ("GOOGL", "Close", "Close", 1),
                 ("GOOGL", "Low", "Low", 1),
-                ("GOOGL", "High", "High", 1)
+                ("GOOGL", "High", "High", 1),
+                ("GOOGL", "Volume", "Volume", 0)
                 ]
     dif_data = bd.getDifData(window=window, streams=dif_streams1)
     dif_test = bd.getDifData(window=window, streams=dif_streams1, test=True)
@@ -48,7 +49,7 @@ def experimentQL():
 
     #QLearning
     env = data.QEnvirontent.QEnvironment(data_y=pure_data, data_x=dif_data, test_y=pure_test, test_x=dif_test)
-    qs = reinforcements.for_stock.QStock(env, dif_data, front_model=encoder)
+    qs = reinforcements.dqnstock.QStock(env, dif_data, front_model=encoder)
     qs.run()
     # qs = reinforcements.for_stock.QGeneticStock(env, dif_data, front_model=encoder)
     # qs.run()
