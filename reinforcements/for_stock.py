@@ -9,6 +9,7 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras import backend as K
 
 import tensorflow as tf
+import copy
 
 EPISODES = 5000
 
@@ -166,8 +167,14 @@ class GeneticAgent:
 
         qlearner = Model(input_front, back_model(front_model(input_front)), name="full_qlearner")
         weights = qlearner.get_weights()
+        if amplitude_wights is not None:
+            qlearner.set_weights(self.addRandomToWeight(qlearner.get_weights(), amplitude_wights))
 
         qlearner.compile(loss="mean_squared_error", optimizer="adam")
+
+        if model_weight is not None:
+            qlearner.set_weights(model_weight)
+
         return qlearner
 
     def myrandomRange(self, rate):
@@ -248,6 +255,7 @@ class QStock:
             for time in range(size_pole):
 
                 action = agent.act(state)
+
                 next_state, reward, done = env.step(action)
                 profit *= 1 + reward
                 agent.memorize(state, action, reward * 100, next_state, done)
@@ -261,6 +269,11 @@ class QStock:
                 if len(agent.memory) > batch_size and time == 0:
                     agent.replay(batch_size)
 
+            # if e is not None:
+            #     if e % 40 == 0 and e != 0:
+            #         agent.learning_rate /= 2
+            #         agent.model.compile(loss=agent._huber_loss, optimizer=Adam(lr=agent.learning_rate))
+
 
 class QGeneticStock:
     def __init__(self, environment, data, front_model=None):
@@ -270,6 +283,8 @@ class QGeneticStock:
         action_size = 3
         self.population = 30
         self.agents = []
+        self.max_old = 20
+        self.current_old = 0
         for row in range(self.population):
             agent = GeneticAgent(environment=environment, amplitude_wights=1.0, front_model=front_model)
             self.agents.append({"agent": agent, "assessment": 0.0})
@@ -308,3 +323,58 @@ class QGeneticStock:
             print("episode: %s", e)
             print("score: %s", best_agent["assessment"])
             print("test: %s", test_result)
+
+            if old_assessment_train != best_agent["assessment"]:
+                self.current_old = 0
+                old_assessment_train = best_agent["assessment"]
+            else:
+                if self.current_old != self.max_old:
+                    self.current_old += 1
+
+    def getChild(self):
+        sumAssessment = 0
+        for i in self.agents:
+            sumAssessment += i["assessment"]
+        rand1 = random.randrange(0, 1000000) / 1000000.0 * sumAssessment
+        rand2 = random.randrange(0, 1000000) / 1000000.0 * sumAssessment
+
+        index1 = 0
+        for index, element in enumerate(self.agents):
+            value = element["assessment"]
+            if rand1 >= value:
+                rand1 -= value
+            else:
+                index1 = index
+                break
+
+        index2 = 0
+        for index, element in enumerate(self.agents):
+            value = element["assessment"]
+            if rand2 >= value:
+                rand2 -= value
+            else:
+                index2 = index
+                break
+
+        layers1 = self.agents[index1]["agent"].getLayers()
+        layers2 = self.agents[index2]["agent"].getLayers()
+
+        llayers2 = layers2
+
+        llayers3 = []
+        for index_layer1, layer1 in enumerate(layers1):
+            llayer1 = layer1.tolist()
+            llayer2 = layers2[index_layer1].tolist()
+            for index_neur1, neur1 in enumerate(llayer1):
+                lneur1 = neur1
+                lneur2 = llayer2[index_neur1]
+                if index_layer1 % 2:
+                    if random.random() * 100 > 50:
+                        llayer1[index_neur1] = llayer2[index_neur1]
+                else:
+                    for index_link1, link1 in enumerate(neur1):
+                        if random.random() * 100 > 50:
+                            llayer1[index_neur1][index_link1] = llayer2[index_neur1][index_link1]
+
+            llayers3.append(np.array(llayer1))
+        return llayers3

@@ -39,6 +39,19 @@ def getData(tiker="GOOGL", window=10, des3=False, tiker_test=None):
         test_data = np.reshape(test_data, (len(test_data), window))
     return train_data, test_data
 
+def getVolume(dataFrame, drop_range = 0, rangevolume = 10):
+    df = dataFrame.tolist()
+    new_df = []
+    for i, item in enumerate(df):
+        end = i + 1
+        start = i - rangevolume
+        if start <0:
+            start = 0
+        new_df.append( df[i]/np.mean([df[j] for j in range(start, end)]) - 1 )
+    for i in range(drop_range):
+        new_df.pop(0)
+    return pd.Series(new_df)
+
 
 def getDifData(window=10, streams=None, test=False):
     """(data[column1][k]/data[column2][k-shift]) -> (tiker, column1, column2, shift)"""
@@ -56,32 +69,32 @@ def getDifData(window=10, streams=None, test=False):
         if shift < max_shift:
             sup_shift = max_shift - shift
 
+        volume_counts = 10
         # train
         suff = '0.csv'
         if test:
             suff = '1.csv'
         df = pd.read_csv('./data/datasets/' + str(tiker) + str(suff))
-        df = (df[column1].shift(sup_shift) / df[column2].shift(shift + sup_shift) - 1) * 100.0
+        if column1 == column2 and column2 == "Volume":
+            df = getVolume(df[column1], sup_shift, rangevolume=10)
+        else:
+            df = (df[column1].shift(sup_shift) / df[column2].shift(shift + sup_shift) - 1) * 100.0
         df = df.dropna()
         length = df.size - window
         df = df.tolist()
-
 
         stream_data = []
         for row in range(window, len(df)):
             start = row - window
             end = row
-            # stream_data.append([df[i] for i in range(start, end)])
             for i in range(start, end):
                 train_data.append(df[i])
-            # train_data.append([df[i] for i in range(start, end)])
-        # train_data.append(stream_data)
     train_data = np.array(train_data)
     train_data = train_data.astype('float32')
     train_data = np.reshape(train_data, (len(streams), length, window, 1))
-    # train_data = np.swapaxes(train_data, 0, 1)
     train_data1 = np.swapaxes(train_data, 0, 1)
     return train_data1
+
 
 def getPureData(window=10, stream=None, test=False):
     """(data[column1][k]) -> (tiker, column1)"""
