@@ -3,8 +3,8 @@ import pandas as pd
 import time
 import matplotlib.pyplot as plt
 
-df = pd.read_csv('../data/datasets/NEE0.csv')
-df2 = pd.read_csv('../data/datasets/NEE1.csv')
+df = pd.read_csv('../data/datasets/GOOGL0.csv')
+df2 = pd.read_csv('../data/datasets/GOOGL1.csv')
 
 closes = []
 closes.append(df.Close.values.tolist())
@@ -246,9 +246,9 @@ class Agent:
 
 window_size = 10
 skip = 1
-initial_money = 10000
+initial_money = 3000
 
-model = Model(input_size=window_size, layer_size=20, output_size=3)
+model = Model(input_size=window_size, layer_size=6, output_size=3)
 agent = Agent(model=model,
               window_size=window_size,
               trend=closes,
