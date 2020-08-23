@@ -28,15 +28,15 @@ def experimentAE():
 def experimentQL():
 
     #prepare data
-    window = 10
+    window = 5
     dif_streams1 = [
-                ("GOOGL", "Close", "Open", 0),
+                # ("GOOGL", "Close", "Open", 0),
                 ("GOOGL", "High", "Open", 0),
                 ("GOOGL", "Low", "Open", 0),
                 ("GOOGL", "Close", "Close", 1),
-                ("GOOGL", "Low", "Low", 1),
-                ("GOOGL", "High", "High", 1),
-                ("GOOGL", "Volume", "Volume", 0)
+                # ("GOOGL", "Low", "Low", 1),
+                # ("GOOGL", "High", "High", 1),
+                # ("GOOGL", "Volume", "Volume", 0)
                 ]
     dif_data = bd.getDifData(window=window, streams=dif_streams1)
     dif_test = bd.getDifData(window=window, streams=dif_streams1, test=True)
@@ -45,7 +45,7 @@ def experimentQL():
     pure_test = bd.getPureData(window=window+1, stream=dif_streams1, test=True)
 
     #get encoder
-    encoder, decoder, autoencoder = abm.getAutoencoder(input_data=(dif_data, dif_test), encod_count=int(window * 2), window=window)
+    encoder, decoder, autoencoder = abm.getAutoencoder(input_data=(dif_data, dif_test), encod_count=int(window), window=window)
 
     #QLearning
     env = data.QEnvirontent.QEnvironment(data_y=pure_data, data_x=dif_data, test_y=pure_test, test_x=dif_test)

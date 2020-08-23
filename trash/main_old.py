@@ -4,17 +4,17 @@ import time
 import matplotlib.pyplot as plt
 import statistics
 
-df = pd.read_csv('../data/datasets/GOOGL0.csv')
+df = pd.read_csv('../data/datasets/GOOGL0.csv') #'datasets/GOOGL0.csv'
 df2 = pd.read_csv('../data/datasets/GOOGL1.csv')
+# df3 = pd.read_csv('datasets/JNJ.csv')
+# df = pd.read_csv('datasets/XOM.csv')
+# df2 = pd.read_csv('datasets/XOM1.csv')
+# df3 = pd.read_csv('datasets/XOM1.csv')
 
 closes = []
 closes.append(df.Open.values.tolist())
+# closes.append(df3.Close.values.tolist())
 close2 = df2.Open.values.tolist()
-
-low2 = df2.Low.values.tolist()
-high2 = df2.High.values.tolist()
-low1 = df.Low.values.tolist()
-high1 = df.High.values.tolist()
 
 
 class Deep_Evolution_Strategy:
@@ -91,33 +91,10 @@ class Model:
         self.weights = weights
 
 
-class Model2L:
-    def __init__(self, input_size, layer_size, output_size, layer2_size=5):
-        self.weights = [
-            np.random.randn(input_size, layer_size),
-            np.random.randn(layer_size, layer2_size),
-            np.random.randn(layer2_size, output_size),
-            np.random.randn(1, layer2_size),
-            np.random.randn(1, layer_size),
-        ]
-
-    def predict(self, inputs):
-        feed1 = np.dot(inputs, self.weights[0]) + self.weights[-1]
-        feed2 = np.dot(feed1, self.weights[1]) + self.weights[-2]
-        decision = np.dot(feed2, self.weights[2])
-        return decision
-
-    def get_weights(self):
-        return self.weights
-
-    def set_weights(self, weights):
-        self.weights = weights
-
-
 class Agent:
     POPULATION_SIZE = 200
-    SIGMA = 0.5  # 0.15 0.5
-    LEARNING_RATE = 0.15  # 0.03 0.15
+    SIGMA = 0.66  # 0.15 0.5
+    LEARNING_RATE = 0.05  # 0.03 0.15
 
     def __init__(self, model, window_size, trend, dif, skip, initial_money):
         self.model = model
@@ -163,7 +140,7 @@ class Agent:
 
         for i in range(len(self.trend)):
 
-            state = self.get_state(5, i)
+            state = self.get_state(self.window_size, i)
             starting_money += initial_money
             inventory = []
             quantity = 0
@@ -175,23 +152,20 @@ class Agent:
 
                 real_cost = starting_money + count * self.trend[i][t]
 
-                trend_buy = self.trend[i][t] - (self.trend[i][t] - low1[t]) / 2
-                trend_sell = self.trend[i][t] + (high1[t] - self.trend[i][t]) / 2
-
-                if action == 1 and starting_money >= trend_buy: #self.trend[i][t]
-                    calc_count = 0.5 * real_cost // trend_buy #self.trend[i][t]
+                if action == 1 and starting_money >= self.trend[i][t]:
+                    calc_count = 0.1 * real_cost // self.trend[i][t]
                     # if calc_count == 0:
                     #     calc_count = 1
                     # starting_money -= self.trend[i][t] * calc_count
-                    starting_money -= trend_buy * calc_count * 1.005 #self.trend[i][t]
+                    starting_money -= self.trend[i][t] * calc_count * 1.005
                     count += calc_count
 
                 elif action == 2 and real_cost >= starting_money:
-                    calc_count = 0.5 * real_cost // trend_sell #self.trend[i][t]
+                    calc_count = 0.1 * real_cost // self.trend[i][t]
                     # if calc_count == 0:
                     #     calc_count = 1
                     # starting_money += self.trend[i][t] * calc_count
-                    starting_money += trend_sell * calc_count * 1.005 #self.trend[i][t]
+                    starting_money += self.trend[i][t] * calc_count * 1.005
                     count -= calc_count
 
                 state = next_state
@@ -214,70 +188,84 @@ class Agent:
 
         count = 0
 
-        for t in range(self.window_size, len(close2) - 1, self.skip):
+        for t in range(self.window_size, len(self.trend) - 1, self.skip):
             action = self.act(state)
             next_state = self.get_state(t + 1)
 
-            real_cost = starting_money + count * close2[t]
+            real_cost = starting_money + count * self.trend[t]
 
-            trend_buy = close2[t] - (close2[t] - low2[t]) / 2
-            trend_sell = close2[t] + (high2[t] - close2[t]) / 2
-
-            if action == 1 and starting_money >= trend_buy: #close2[t]
-                calc_count = 0.5 * real_cost // trend_buy #close2[t]
+            if action == 1 and starting_money >= self.trend[t]:
+                calc_count = 0.2 * real_cost // self.trend[t]
                 # if calc_count == 0:
                 #     calc_count = 1
-                starting_money -= trend_buy * calc_count * 1.0005   #close2[t]
+                starting_money -= close2[t] * calc_count * 1.0005
                 # starting_money -= self.trend[t] * calc_count * 0.0005
                 count += calc_count
                 states_buy.append(t)
                 print('day %d: buy 1 unit at price %f, total balance %f, paper %f' % (
-                    t, close2[t], starting_money + count * close2[t], count))
+                    t, self.trend[t], starting_money + count * self.trend[t], count))
 
             elif action == 2 and real_cost >= starting_money:
-                calc_count = 0.5 * real_cost // trend_sell #close2[t]
+                calc_count = 0.2 * real_cost // self.trend[t]
                 # if calc_count == 0:
                 #     calc_count = 1
-                starting_money += trend_sell * calc_count * 1.0005 #close2[t]
+                starting_money += self.trend[t] * calc_count * 1.0005
                 # starting_money -= close2[t] * calc_count * 0.0005
                 count -= calc_count
                 states_sell.append(t)
 
                 print(
                     'day %d, sell 1 unit at price %f, total balance %f, paper %f'
-                    % (t, close2[t], starting_money + count * close2[t], count)
+                    % (t, self.trend[t], starting_money + count * self.trend[t], count)
                 )
             state = next_state
 
-        holding_sum = count * close2[-1]
+        holding_sum = count * self.trend[-1]
         starting_money += holding_sum
 
         invest = ((starting_money - initial_money) / initial_money) * 100
         total_gains = starting_money - initial_money
         return states_buy, states_sell, total_gains, invest
 
+def getCount(arr_arr, co):
+    res_count = 0
+    for row_arr in arr_arr:
+        if containsArray(row_arr, co):
+            res_count += 1
+    return res_count
+
+def containsArray(arr, co):
+    for row in arr:
+        if row == co:
+            return True
+    return False
 
 window_size = 5
 skip = 1
 initial_money = 100000
 
-iteration = 5
 invest_array = []
-for row in range(iteration):
+states_buy_array = []
+states_sell_array = []
+iterations = 10
+
+
+for iter in range(iterations):
     model = Model(input_size=window_size, layer_size=2, output_size=3)
-    # model = Model2L(input_size=window_size, layer_size=5, output_size=3)
     agent = Agent(model=model,
-                  window_size=window_size,
-                  trend=closes,
-                  dif=closes,
-                  skip=skip,
-                  initial_money=initial_money)
-    agent.fit(iterations=200, checkpoint=50)
+          window_size=window_size,
+          trend=closes,
+          dif=closes,
+          skip=skip,
+          initial_money=initial_money)
+    agent.fit(iterations=400, checkpoint=50)
 
     states_buy, states_sell, total_gains, invest = agent.buy(close1=close2)
+    states_buy_array.append(states_buy)
+    states_sell_array.append(states_sell)
     invest_array.append(invest)
 
-    fig = plt.figure(figsize=(30, 10))
+    fig = plt.figure(figsize=(15, 5))
     plt.plot(close2, color='r', lw=2.)
     plt.plot(close2, '^', markersize=10, color='m', label='buying signal', markevery=states_buy)
     plt.plot(close2, 'v', markersize=10, color='k', label='selling signal', markevery=states_sell)
@@ -287,7 +275,36 @@ for row in range(iteration):
 
 mean1 = statistics.mean(invest_array)
 std1 = statistics.stdev(invest_array)
-prof1 = mean1 / std1
-print("mean=" + str(mean1))
-print("std=" + str(std1))
-print("prof=" + str(prof1))
+print('mean %f, std %f, prof %f' % (round(mean1, 2), round(std1, 2), round(mean1/std1, 2)))
+
+result_status = []
+for row in range(5, 35):
+    count_buy = getCount(states_buy_array, row)
+    count_sell = getCount(states_sell_array, row)
+    count_none = iterations - count_buy - count_sell
+    if count_buy > count_sell and count_buy > count_none:
+        result_status.append('+')
+    elif count_sell > count_buy and count_sell > count_none:
+        result_status.append('-')
+    else:
+        result_status.append('0')
+
+
+
+print(states_buy_array)
+print(states_sell_array)
+print(result_status)
+
+# import utils.autoencoder as ae
+#
+# data1 = []
+# window = 10
+# length = len(closes[0]) - window
+# for row in range(window):
+#     start = row
+#     end = length + row
+#     data1.append([closes[0][i] for i in range(start, end)])
+# data1 = pd.DataFrame(data1)
+# # data1 = data1.transpose()
+# vec = ae.reducedimension(input_=data1, dimension=5, learning_rate=0.01, hidden_layer=20, epoch=100000)
+# re = 4

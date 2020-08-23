@@ -53,13 +53,13 @@ class DQNAgent:
         if front_model is None:
             input_front = Input(shape=(self.state_size[0], self.state_size[1], 1))
             flat_front = Flatten()(input_front)
-            x1 = Dense(20)(flat_front)
+            x1 = Dense(10)(flat_front)
             front_model = Model(input_front, x1, name="front")
         else:
             input_front = front_model.input
 
         # x = Dense(10)(x)
-        input_back = Input(shape=(20,))
+        input_back = Input(shape=(5,))
         x2 = Dense(5)(input_back)
         x2 = Dense(3)(x2)
         back_model = Model(input_back, x2, name="back")
